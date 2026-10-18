@@ -1,12 +1,16 @@
-# MQTT configuration template
-MQTT_BROKER = 'your-broker-address.emqxsl.com'
-MQTT_PORT = 8883
-MQTT_USERNAME = 'your_username'
-MQTT_PASSWORD = 'your_password'
-MQTT_CA_CERTS = 'emqxsl-ca.crt'
-MQTT_CLIENT_ID_PREFIX = 'agri_device_'
+# MQTT 服务器配置
+BROKER_HOST = "your-broker-address.emqxsl.com"
+BROKER_PORT = 8883
+USERNAME = "your_username"
+PASSWORD = "your_password"
+CA_CERTS = "emqxsl-ca.crt"
+CLIENT_ID = "agri_sensor_device_01"
 
-# Server API configuration
-API_HOST = '0.0.0.0'
+# 主题配置
+TOPIC_TELEMETRY = "agri/greenhouse/telemetry"
+TOPIC_COMMAND = "agri/greenhouse/command"
+
+# 服务端 API 配置
+API_HOST = "0.0.0.0"
 API_PORT = 8000
 
