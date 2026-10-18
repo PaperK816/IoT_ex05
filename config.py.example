@@ -1,0 +1,12 @@
+# MQTT configuration template
+MQTT_BROKER = 'your-broker-address.emqxsl.com'
+MQTT_PORT = 8883
+MQTT_USERNAME = 'your_username'
+MQTT_PASSWORD = 'your_password'
+MQTT_CA_CERTS = 'emqxsl-ca.crt'
+MQTT_CLIENT_ID_PREFIX = 'agri_device_'
+
+# Server API configuration
+API_HOST = '0.0.0.0'
+API_PORT = 8000
+
