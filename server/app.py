@@ -23,7 +23,17 @@ app.add_middleware(
 
 latest_telemetry = {
     'status': 'waiting_for_data',
-    'timestamp': None
+    'timestamp': None,
+    'soil_temperature': 0.0,
+    'soil_moisture': 0.0,
+    'air_temperature': 0.0,
+    'air_humidity': 0.0,
+    'light_intensity': 0.0,
+    'co2_concentration': 0.0,
+    'pest_density': 0.0,
+    'drone_status': '等待中',
+    'drone_disease_detected': '等待中',
+    'camera_snapshot': 'waiting.jpg'
 }
 data_lock = threading.Lock()
 mqtt_client = None
