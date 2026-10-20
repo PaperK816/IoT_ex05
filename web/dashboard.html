@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>现代化农业大棚 - IoT 可视化监控大屏</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- 引入 Chart.js 用于实时折线图 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- 引入 Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 根样式与主题变量，完美继承自实验四 */
+        :root {
+            --bg-light: #faf5ed;
+            --card-light: #ffffff;
+            --text-light: #2c3e50;
+            --border-light: #e6dfd3;
+            
+            --bg-dark: #171b21;
+            --card-dark: #21262d;
+            --text-dark: #e1e4e8;
+            --border-dark: #30363d;
+        }
+
+        body.light {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        body.dark {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        .theme-card {
+            transition: all 0.3s ease;
+        }
+
+        body.light .theme-card {
+            background-color: var(--card-light);
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        body.dark .theme-card {
+            background-color: var(--card-dark);
+            border: 1px solid var(--border-dark);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body class="light min-h-screen font-sans antialiased transition-colors duration-300">
+
+    <!-- 顶部导航栏 -->
+    <header class="theme-card border-b sticky top-0 z-50 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-emerald-600 rounded-xl text-white shadow-md">
+                    <i data-lucide="sprout" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">农业大棚物联网监测平台</h1>
+                    <p class="text-xs opacity-70">Greenhouse IoT Monitoring & Control Dashboard</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <!-- 连接状态指示器 -->
+                <div id="connection-status" class="flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" id="status-dot"></span>
+                    <span id="status-text">正在连接后端 API...</span>
+                </div>
+
+                <!-- 日夜模式切换按钮 -->
+                <button onclick="toggleTheme()" class="p-2 rounded-xl theme-card hover:opacity-80 transition cursor-pointer" title="切换日夜模式">
+                    <i data-lucide="moon" id="theme-icon" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主体内容区域 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+        <!-- 农业六大传感器数据卡片网格 -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- 土壤温度 -->
+            <div class="theme-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium opacity-70">土壤温度 (Soil Temp)</p>
+                    <div class="p-3 bg-amber-500/10 text-amber-500 rounded-xl">
+                        <i data-lucide="thermometer" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span class="text-3xl font-extrabold tracking-tight" id="val-soil-temp">--</span>
+                    <span class="text-lg font-semibold opacity-60">°C</span>
+                </div>
+                <div class="mt-3 text-xs opacity-60">正常范围: 18°C ~ 28°C</div>
+            </div>
+
+            <!-- 土壤湿度 -->
+            <div class="theme-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium opacity-70">土壤湿度 (Soil Moisture)</p>
+                    <div class="p-3 bg-blue-500/10 text-blue-500 rounded-xl">
+                        <i data-lucide="droplets" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span class="text-3xl font-extrabold tracking-tight" id="val-soil-moisture">--</span>
+                    <span class="text-lg font-semibold opacity-60">%</span>
+                </div>
+                <div class="mt-3 text-xs opacity-60">正常范围: 30% ~ 70%</div>
+            </div>
+
+            <!-- 空气温度 -->
+            <div class="theme-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium opacity-70">空气温度 (Air Temp)</p>
+                    <div class="p-3 bg-red-500/10 text-red-500 rounded-xl">
+                        <i data-lucide="sun" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span class="text-3xl font-extrabold tracking-tight" id="val-air-temp">--</span>
+                    <span class="text-lg font-semibold opacity-60">°C</span>
+                </div>
+                <div class="mt-3 text-xs opacity-60">正常范围: 20°C ~ 35°C</div>
+            </div>
+
+            <!-- 空气湿度 -->
+            <div class="theme-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium opacity-70">空气湿度 (Air Humidity)</p>
+                    <div class="p-3 bg-cyan-500/10 text-cyan-500 rounded-xl">
+                        <i data-lucide="wind" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span class="text-3xl font-extrabold tracking-tight" id="val-air-humidity">--</span>
+                    <span class="text-lg font-semibold opacity-60">%</span>
+                </div>
+                <div class="mt-3 text-xs opacity-60">正常范围: 40% ~ 85%</div>
+            </div>
+
+            <!-- 光照强度 -->
+            <div class="theme-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium opacity-70">光照强度 (Light Intensity)</p>
+                    <div class="p-3 bg-yellow-500/10 text-yellow-500 rounded-xl">
+                        <i data-lucide="zap" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span class="text-3xl font-extrabold tracking-tight" id="val-light">--</span>
+                    <span class="text-lg font-semibold opacity-60">lux</span>
+                </div>
+                <div class="mt-3 text-xs opacity-60">大棚光照实时监测</div>
+            </div>
+
+            <!-- 二氧化碳浓度 -->
+            <div class="theme-card rounded-2xl p-6 relative overflow-hidden">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm font-medium opacity-70">CO2 浓度 (CO2 Level)</p>
+                    <div class="p-3 bg-emerald-500/10 text-emerald-500 rounded-xl">
+                        <i data-lucide="activity" class="w-6 h-6"></i>
+                    </div>
+                </div>
+                <div class="mt-4 flex items-baseline space-x-2">
+                    <span class="text-3xl font-extrabold tracking-tight" id="val-co2">--</span>
+                    <span class="text-lg font-semibold opacity-60">ppm</span>
+                </div>
+                <div class="mt-3 text-xs opacity-60">正常范围: 400 ~ 1200 ppm</div>
+            </div>
+
+        </div>
+
+        <!-- 底部两列：左侧图表，右侧远程控制与日志 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- 实时数据折线图区 -->
+            <div class="lg:col-span-2 theme-card rounded-2xl p-6 flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-2">
+                        <i data-lucide="line-chart" class="w-5 h-5 text-emerald-600"></i>
+                        <h2 class="font-semibold text-base">温湿度与环境实时趋势</h2>
+                    </div>
+                    <span class="text-xs opacity-60" id="last-update-time">最后更新: 从未接收</span>
+                </div>
+                <div class="h-80 relative">
+                    <canvas id="realtimeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 远程控制与日志区 -->
+            <div class="theme-card rounded-2xl p-6 flex flex-col justify-between space-y-6">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i data-lucide="sliders" class="w-5 h-5 text-emerald-600"></i>
+                        <h2 class="font-semibold text-base">大棚设备远程控制</h2>
+                    </div>
+                    <p class="text-xs opacity-60 mb-4">通过后端 API 向设备下发 MQTT 控制指令。</p>
+                    
+                    <!-- 控制按钮组 -->
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                            <div>
+                                <h4 class="text-xs font-semibold">智能灌溉水泵</h4>
+                                <p class="text-[10px] opacity-60">控制自动滴灌系统</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="sendControl('irrigation', 'ON')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium rounded-lg transition cursor-pointer">开启</button>
+                                <button onclick="sendControl('irrigation', 'OFF')" class="px-3 py-1 bg-gray-500 hover:bg-gray-400 text-white text-xs font-medium rounded-lg transition cursor-pointer">关闭</button>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                            <div>
+                                <h4 class="text-xs font-semibold">电动遮阳网</h4>
+                                <p class="text-[10px] opacity-60">调节光照强度</p>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="sendControl('shade', 'OPEN')" class="px-3 py-1 bg-amber-600 hover:bg-amber-500 text-white text-xs font-medium rounded-lg transition cursor-pointer">展开</button>
+                                <button onclick="sendControl('shade', 'CLOSE')" class="px-3 py-1 bg-gray-500 hover:bg-gray-400 text-white text-xs font-medium rounded-lg transition cursor-pointer">收起</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 实时日志区 -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center space-x-1">
+                            <i data-lucide="terminal" class="w-4 h-4 text-emerald-600"></i>
+                            <span class="text-xs font-semibold opacity-80">系统与控制日志</span>
+                        </div>
+                        <button onclick="clearLogs()" class="text-[10px] opacity-60 hover:opacity-100 underline cursor-pointer">清空</button>
+                    </div>
+                    <div id="log-container" class="bg-gray-900 text-emerald-400 font-mono text-[11px] rounded-xl p-3 h-32 overflow-y-auto space-y-1">
+                        <div class="opacity-50">[System] 网页大屏已加载，正在轮询后端 API...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- JavaScript 交互逻辑 -->
+    <script>
+        // 初始化 Lucide 图标
+        lucide.createIcons();
+
+        // 日夜模式切换
+        function toggleTheme() {
+            const body = document.body;
+            const icon = document.getElementById('theme-icon');
+            if (body.classList.contains('light')) {
+                body.classList.replace('light', 'dark');
+                icon.setAttribute('data-lucide', 'sun');
+            } else {
+                body.classList.replace('dark', 'light');
+                icon.setAttribute('data-lucide', 'moon');
+            }
+            lucide.createIcons();
+            updateChartTheme();
+        }
+
+        // 日志打印函数
+        function addLog(message) {
+            const container = document.getElementById('log-container');
+            const timeStr = new Date().toLocaleTimeString();
+            const div = document.createElement('div');
+            div.innerHTML = `<span class="opacity-40">[${timeStr}]</span> ${message}`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('log-container').innerHTML = '<div class="opacity-50">[System] 日志已清空。</div>';
+        }
+
+        // Chart.js 实时折线图初始化（支持土壤温度、空气温度、土壤湿度）
+        const ctx = document.getElementById('realtimeChart').getContext('2d');
+        const maxDataPoints = 15;
+
+        const chartData = {
+            labels: [],
+            datasets: [
+                {
+                    label: '土壤温度 (°C)',
+                    data: [],
+                    borderColor: '#f59e0b',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '空气温度 (°C)',
+                    data: [],
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    yAxisID: 'y'
+                },
+                {
+                    label: '土壤湿度 (%)',
+                    data: [],
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    yAxisID: 'y1'
+                }
+            ]
+        };
+
+        const realtimeChart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: { duration: 300 },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(128, 128, 128, 0.1)' },
+                        ticks: { color: 'rgba(128, 128, 128, 0.7)', font: { size: 10 } }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: '温度 (°C)' },
+                        grid: { color: 'rgba(128, 128, 128, 0.1)' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        min: 0,
+                        max: 100,
+                        title: { display: true, text: '湿度 (%)' },
+                        grid: { drawOnChartArea: false }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: 'inherit', font: { family: 'sans-serif' } } }
+                }
+            }
+        });
+
+        function updateChartTheme() {
+            const isDark = document.body.classList.contains('dark');
+            const textColor = isDark ? '#e1e4e8' : '#2c3e50';
+            realtimeChart.options.plugins.legend.labels.color = textColor;
+            realtimeChart.update();
+        }
+
+        // 定时轮询后端获取最新传感器数据
+        async function fetchSensorData() {
+            try {
+                const response = await fetch('http://localhost:8000/api/sensors/latest');
+                if (!response.ok) throw new Error('网络请求失败');
+                const data = await response.json();
+
+                const statusDot = document.getElementById('status-dot');
+                const statusText = document.getElementById('status-text');
+                const statusBadge = document.getElementById('connection-status');
+
+                if (data && data.timestamp) {
+                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                    statusText.innerText = "后端连接正常";
+                    statusBadge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+
+                    // 1. 填充 6 大农业参数数值
+                    document.getElementById('val-soil-temp').innerText = data.soil_temperature.toFixed(1);
+                    document.getElementById('val-soil-moisture').innerText = data.soil_moisture.toFixed(1);
+                    document.getElementById('val-air-temp').innerText = data.air_temperature.toFixed(1);
+                    document.getElementById('val-air-humidity').innerText = data.air_humidity.toFixed(1);
+                    document.getElementById('val-light').innerText = data.light_intensity.toFixed(1);
+                    document.getElementById('val-co2').innerText = data.co2_concentration.toFixed(1);
+
+                    const timeStr = new Date(data.timestamp * 1000).toLocaleTimeString();
+                    document.getElementById('last-update-time').innerText = `最后更新: ${timeStr}`;
+
+                    // 2. 更新折线图
+                    if (chartData.labels.length >= maxDataPoints) {
+                        chartData.labels.shift();
+                        chartData.datasets[0].data.shift();
+                        chartData.datasets[1].data.shift();
+                        chartData.datasets[2].data.shift();
+                    }
+                    chartData.labels.push(timeStr);
+                    chartData.datasets[0].data.push(data.soil_temperature);
+                    chartData.datasets[1].data.push(data.air_temperature);
+                    chartData.datasets[2].data.push(data.soil_moisture);
+                    realtimeChart.update();
+                } else {
+                    statusText.innerText = "等待设备上报数据...";
+                }
+            } catch (error) {
+                console.error('轮询后端出错:', error);
+                const statusDot = document.getElementById('status-dot');
+                const statusText = document.getElementById('status-text');
+                statusDot.className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
+                statusText.innerText = "后端连接断开";
+            }
+        }
+
+        // 远程控制指令下发函数
+        async function sendControl(action, value) {
+            try {
+                addLog(`正在下发控制 [${action}] -> ${value}...`);
+                const response = await fetch('http://localhost:8000/api/control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, value: value })
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    addLog(`指令下发成功: ${action} = ${value}`);
+                } else {
+                    addLog(`指令下发失败: ${result.detail || '未知错误'}`);
+                }
+            } catch (error) {
+                addLog(`请求后端 API 出错: ${error.message}`);
+            }
+        }
+
+        // 页面加载后启动定时轮询（每 3 秒请求一次后端）
+        window.addEventListener('load', () => {
+            fetchSensorData();
+            setInterval(fetchSensorData, 3000);
+        });
+    </script>
+</body>
+</html>
