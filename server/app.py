@@ -4,23 +4,28 @@ import time
 import os
 import sys
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import paho.mqtt.client as mqtt
 
-# 将根目录添加到 sys.path 以导入 config
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
 app = FastAPI(title='农业物联网监测平台 API', version='1.0.0')
 
-# 内存缓存最新传感器数据
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
+
 latest_telemetry = {
     'status': 'waiting_for_data',
     'timestamp': None
 }
 data_lock = threading.Lock()
-
-# MQTT 客户端实例用于服务端接收及下发指令
 mqtt_client = None
 
 def on_connect(client, userdata, flags, rc):
