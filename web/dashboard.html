@@ -178,7 +178,7 @@
                 <div class="mt-3 text-xs opacity-60">正常范围: 400 ~ 1200 ppm</div>
             </div>
 
-            <!-- 虫情监测密度 (新增) -->
+            <!-- 虫情监测密度 -->
             <div class="theme-card rounded-2xl p-6 relative overflow-hidden border-l-4 border-l-purple-500 sm:col-span-2 lg:col-span-3">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center space-x-3">
@@ -297,6 +297,36 @@
 
         </div>
 
+        <!-- 实验要求 3：数据分析与统计分析看板 -->
+        <div class="theme-card rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="bar-chart-3" class="w-5 h-5 text-emerald-600"></i>
+                    <h2 class="font-semibold text-base">环境数据统计与动态分析 (最近15次采样)</h2>
+                </div>
+                <span class="text-xs opacity-60" id="stat-count">累计采集: 0 帧</span>
+            </div>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <p class="text-xs opacity-60">平均土壤温度</p>
+                    <p class="text-xl font-bold mt-1 text-amber-500" id="stat-avg-soil-temp">-- °C</p>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <p class="text-xs opacity-60">平均土壤湿度</p>
+                    <p class="text-xl font-bold mt-1 text-blue-500" id="stat-avg-soil-moisture">-- %</p>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <p class="text-xs opacity-60">极端最高空气温度</p>
+                    <p class="text-xl font-bold mt-1 text-red-500" id="stat-max-air-temp">-- °C</p>
+                </div>
+                <div class="p-3 bg-gray-50 dark:bg-gray-800/40 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <p class="text-xs opacity-60">极端最低空气温度</p>
+                    <p class="text-xl font-bold mt-1 text-emerald-500" id="stat-min-air-temp">-- °C</p>
+                </div>
+            </div>
+        </div>
+
         <!-- 实时数据折线图区 -->
         <div class="theme-card rounded-2xl p-6">
             <div class="flex items-center justify-between mb-4">
@@ -346,6 +376,12 @@
 
         const ctx = document.getElementById('realtimeChart').getContext('2d');
         const maxDataPoints = 15;
+
+        // 维护用于数据分析的数组历史
+        let soilTempHistory = [];
+        let soilMoistureHistory = [];
+        let airTempHistory = [];
+        let totalSampleCount = 0;
 
         const chartData = {
             labels: [],
@@ -432,7 +468,6 @@
                 const statusBadge = document.getElementById('connection-status');
 
                 if (data && data.timestamp) {
-                    // 检查设备心跳是否超时（超过 12 秒没有新数据，判定为设备离线故障）
                     const nowSec = Math.floor(Date.now() / 1000);
                     const age = nowSec - data.timestamp;
 
@@ -471,7 +506,30 @@
                         alarmMoisture.innerHTML = `<span class="opacity-60">正常范围: 30% ~ 70%</span>`;
                     }
 
-                    // 4. 刷新折线图
+                    // 4. 动态统计分析计算 (实验要求 3)
+                    totalSampleCount++;
+                    soilTempHistory.push(data.soil_temperature);
+                    soilMoistureHistory.push(data.soil_moisture);
+                    airTempHistory.push(data.air_temperature);
+
+                    if (soilTempHistory.length > maxDataPoints) {
+                        soilTempHistory.shift();
+                        soilMoistureHistory.shift();
+                        airTempHistory.shift();
+                    }
+
+                    const avgSoilTemp = (soilTempHistory.reduce((a, b) => a + b, 0) / soilTempHistory.length).toFixed(1);
+                    const avgSoilMoisture = (soilMoistureHistory.reduce((a, b) => a + b, 0) / soilMoistureHistory.length).toFixed(1);
+                    const maxAirTemp = Math.max(...airTempHistory).toFixed(1);
+                    const minAirTemp = Math.min(...airTempHistory).toFixed(1);
+
+                    document.getElementById('stat-count').innerText = `累计采集: ${totalSampleCount} 帧`;
+                    document.getElementById('stat-avg-soil-temp').innerText = `${avgSoilTemp} °C`;
+                    document.getElementById('stat-avg-soil-moisture').innerText = `${avgSoilMoisture} %`;
+                    document.getElementById('stat-max-air-temp').innerText = `${maxAirTemp} °C`;
+                    document.getElementById('stat-min-air-temp').innerText = `${minAirTemp} °C`;
+
+                    // 5. 刷新折线图
                     if (chartData.labels.length >= maxDataPoints) {
                         chartData.labels.shift();
                         chartData.datasets[0].data.shift();
