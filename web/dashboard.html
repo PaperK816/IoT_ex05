@@ -432,9 +432,19 @@
                 const statusBadge = document.getElementById('connection-status');
 
                 if (data && data.timestamp) {
-                    statusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
-                    statusText.innerText = "后端连接正常";
-                    statusBadge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+                    // 检查设备心跳是否超时（超过 12 秒没有新数据，判定为设备离线故障）
+                    const nowSec = Math.floor(Date.now() / 1000);
+                    const age = nowSec - data.timestamp;
+
+                    if (age > 12) {
+                        statusDot.className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
+                        statusText.innerText = `⚠️ 设备离线告警 (${age}s无响应)`;
+                        statusBadge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
+                    } else {
+                        statusDot.className = "w-2 h-2 rounded-full bg-emerald-500";
+                        statusText.innerText = "后端连接正常";
+                        statusBadge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400";
+                    }
 
                     // 1. 刷新基础 6 大参数数值
                     document.getElementById('val-soil-temp').innerText = data.soil_temperature !== undefined ? data.soil_temperature.toFixed(1) : '--';
@@ -473,13 +483,18 @@
                     chartData.datasets[1].data.push(data.air_temperature);
                     chartData.datasets[2].data.push(data.soil_moisture);
                     realtimeChart.update();
+                } else {
+                    statusDot.className = "w-2 h-2 rounded-full bg-amber-500 animate-pulse";
+                    statusText.innerText = "等待设备初始化数据...";
                 }
             } catch (error) {
                 console.error('轮询后端出错:', error);
                 const statusDot = document.getElementById('status-dot');
                 const statusText = document.getElementById('status-text');
+                const statusBadge = document.getElementById('connection-status');
                 statusDot.className = "w-2 h-2 rounded-full bg-red-500 animate-pulse";
-                statusText.innerText = "后端连接断开";
+                statusText.innerText = "后端服务未响应";
+                statusBadge.className = "flex items-center space-x-2 px-3 py-1.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400";
             }
         }
 
