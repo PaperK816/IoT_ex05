@@ -48,15 +48,25 @@ class GreenhouseSensorDevice:
             print(f'[SensorDevice] 解析消息出错: {e}')
 
     def generate_sensor_data(self):
+        # 扩展的农业大棚多模态监测数据（传感器、虫情、无人机、摄像头）
+        drone_statuses = ['巡检中', '待命返航', '空中悬停', '充电中']
+        diseases = ['无异常', '轻度叶斑病', '白粉病预防', '蚜虫迹象']
+
         return {
             'device_id': self.device_id,
             'timestamp': int(time.time()),
-            'soil_temperature': round(random.uniform(18.0, 28.0), 2),
-            'soil_moisture': round(random.uniform(30.0, 70.0), 2),
-            'air_temperature': round(random.uniform(20.0, 35.0), 2),
-            'air_humidity': round(random.uniform(40.0, 85.0), 2),
-            'light_intensity': round(random.uniform(1000.0, 50000.0), 2),
-            'co2_concentration': round(random.uniform(400.0, 1200.0), 2)
+            # 基础环境与土壤参数
+            'soil_temperature': round(random.uniform(18.0, 28.0), 2),  # 土壤温度 (°C)
+            'soil_moisture': round(random.uniform(30.0, 70.0), 2),  # 土壤湿度 (%)
+            'air_temperature': round(random.uniform(20.0, 35.0), 2),  # 空气温度 (°C)
+            'air_humidity': round(random.uniform(40.0, 85.0), 2),  # 空气湿度 (%)
+            'light_intensity': round(random.uniform(1000.0, 50000.0), 2),  # 光照强度 (lux)
+            'co2_concentration': round(random.uniform(400.0, 1200.0), 2),  # 二氧化碳浓度 (ppm)
+            # 新增农业专属监测指标（对应实验要求 1）
+            'pest_density': round(random.uniform(0.0, 15.0), 1),  # 虫情密度 (只/平方米)
+            'drone_status': random.choice(drone_statuses),  # 无人机巡检状态
+            'drone_disease_detected': random.choice(diseases),  # 无人机图像识别病害
+            'camera_snapshot': f"snapshot_{time.strftime('%Y%m%d_%H%M%S')}.jpg"  # 摄像头抓拍记录
         }
 
     def start(self):
